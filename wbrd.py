@@ -40,50 +40,55 @@ class Board(object):
         x, y = coords
         self.board[y][x] = data
 
-    """ Returns a list of indices of neighbors of a node in our board 
+    """ Returns a list of indices of neighbors of a node in our board
         Keyword arguments:
         filt -- a function that takes a Node as a single parameter and returns True or False
         """
-    def get_neighbors(self, x, y, filt=None):
+    def get_neighbors(self, coords, filt=None):
         L = []
+        x, y = coords
         # define a list for North, South, East, West
         for neighbor_x, neighbor_y in [(x, y+1), (x, y-1), (x+1, y), (x-1, y)]:
             if neighbor_x >= 0 and neighbor_x < self.width and neighbor_y >= 0 and neighbor_y < self.height:
                 if filt and filt(self[neighbor_x, neighbor_y]):
                         L.append((neighbor_x, neighbor_y))
-                elif not filt:
+                elif filt is None:
                     L.append((neighbor_x, neighbor_y))
         return L
 
-    def is_edge(self, x, y):
+    """ Returns True or False depending on whether the coordinates are on the edge of the board"""
+    def is_edge(self, coords):
+        x, y = coords
         return x == 0 or y == 0 or x == self.width-1 or y == self.height-1
 
-    def test_closed(self, x, y, filt=None):
+    def test_closed(self, coords, filt=None):
         seen_list = []
         work_queue = deque()
         is_open = False
-        work_queue.append((x, y))
-        seen_list.append((x, y))
+        work_queue.append(coords)
+        self.set_to([coords], 'S')
         while work_queue:
-            curnode_x, curnode_y = work_queue.popleft()
-            for neighbor_x, neighbor_y in self.get_neighbors(curnode_x, curnode_y, filt):
-                seen_list.append((neighbor_x, neighbor_y))
-                if self.is_edge(neighbor_x, neighbor_y):
+            curnode_coords = work_queue.popleft()
+            for neighbor_coords in self.get_neighbors(curnode_coords, filt):
+                seen_list.append(neighbor_coords)
+                self[neighbor_coords].explored = True
+                if self.is_edge(neighbor_coords):
                     print("Found edge of the board!")
-                    self.set_to(seen_list, 'S')
+                    self.set_to(seen_list, 'E')
                     return
-                work_queue.append((neighbor_x, neighbor_y))
+                work_queue.append(neighbor_coords)
+        self.set_to(seen_list, 'E')
         print("Didn't find edge of the board.")
 
-    """ Sets a list of indices of nodes in the board to be a particular state"""
-    def set_to(self, nodes, state):
-        for node_x, node_y in nodes:
+    """ Sets a list of coords of nodes in the board to be a particular state"""
+    def set_to(self, coords, state):
+        for node_x, node_y in coords:
             self[node_x, node_y].state = state
 
 def main():
     board = Board('board.brd')
     print(board)
-    board.test_closed(7, 5, lambda x: x.state != 'A')
+    board.test_closed((7, 6), lambda x: x.explored == False and x.state != 'A' and x.state != 'S')
     print(board)
 
 main()

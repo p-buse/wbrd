@@ -61,6 +61,12 @@ class Board(object):
         x, y = coords
         return x == 0 or y == 0 or x == self.width-1 or y == self.height-1
 
+    """ Returns a flat list of nodes in the board
+        Syntax from: http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
+    """
+    def __iter__(self):
+        return iter([item for sublist in self.board for item in sublist])
+
     def test_closed(self, coords, filt=None):
         seen_list = []
         work_queue = deque()
@@ -88,7 +94,7 @@ class Board(object):
 def main():
     board = Board('board.brd')
     print(board)
-    board.test_closed((7, 6), lambda x: x.explored == False and x.state != 'A' and x.state != 'S')
-    print(board)
+    for node in board:
+        print(node)
 
 main()

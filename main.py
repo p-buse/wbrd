@@ -1,37 +1,39 @@
 import pygame
+from player import Player
 from pygame.locals import *
 def main():
     pygame.init()
     screen_size = (960, 600)
-    player_size = 25
+    pixel_size = 25
 
     screen = pygame.display.set_mode(screen_size)
     pygame.display.set_caption("WBRD")
 
-    # Initialise clock
+    # Initialize clock
     clock = pygame.time.Clock()
+
+    # Set up our game objects
+    p1 = Player('1', Color('red'))
+    p2 = Player('2', Color('blue'))
+    p2.set_input_map(K_j, K_l, K_i, K_k)
+    player_list = [p1, p2]
+
     done = False
-    x = y = 0
     while not done:
         clock.tick(60) # don't run faster than 60FPS
+        pygame.event.pump() # refresh the event queue
         pressed_keys = pygame.key.get_pressed()
-        if pressed_keys[K_ESCAPE]:
-            done = True
-        if pressed_keys[K_a]:
-            x += 1
-        if pressed_keys[K_d]:
-            x -= 1
-        if pressed_keys[K_w]:
-            y -= 1
-        if pressed_keys[K_s]:
-            y += 1
+        # Process input
+        for player in player_list:
+            player.process_input(pressed_keys)
+        # Update
+        for player in player_list:
+            player.update([x + y for x, y in zip(player.pos, player.velocity)])
 
-        """Update below here"""
-
-
-        """Render below here"""
+        # Render
         screen.fill(Color('black'))
-        pygame.draw.rect(screen, Color('white'), Rect(x, y, player_size, player_size))
+        for player in player_list:
+            player.render(screen, pixel_size)
         pygame.display.flip()
 
     pygame.quit()

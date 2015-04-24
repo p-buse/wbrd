@@ -130,15 +130,16 @@ class Board(object):
         for player in self.player_list:
             print("player %s " % player.char + " pos: %s" % player.pos)
         # make players bump against each other
-        collision_list = []
+        collision_set = set()
         for player_index, player in enumerate(self.player_list):
             for other_index, other_player in enumerate(self.player_list):
                 if other_player.intended_pos == player.intended_pos and player_index != other_index:
-                    collision_list.append(other_index)
+                    collision_set.add(player_index)
+                    collision_set.add(other_index)
 
         # bump the ones who would collide
-        for i in collision_list:
-            self.player_list[i].intended_position = self.player_list[i].pos
+        for i in collision_set:
+            self.player_list[i].intended_pos = self.player_list[i].pos
 
         # actually move the players
         for player in self.player_list:

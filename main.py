@@ -26,15 +26,12 @@ def main():
         pygame.event.pump() # refresh the event queue
         pressed_keys = pygame.key.get_pressed()
         # Process input
+        board.process_input(pressed_keys)
         # Update
-
-        for player in player_list:
-            player.update([x + y for x, y in zip(player.pos, player.velocity)])
-
+        board.update()
         # Render
         screen.fill(Color('black'))
-        for player in player_list:
-            player.render(screen, pixel_size)
+        board.render(screen, pixel_size)
         pygame.display.flip()
 
     pygame.quit()

@@ -1,3 +1,5 @@
+import pygame
+from pygame.locals import *
 from collections import deque
 class Node(object):
     def __init__(self, state):
@@ -10,6 +12,8 @@ class Node(object):
 class Board(object):
     wall_char = 'A'
     empty_char = 'x'
+    wall_color = Color('Green')
+    empty_color = Color('White')
     def __init__(self, filename, player_list):
         self.board = []
         self.width = 0
@@ -132,8 +136,9 @@ class Board(object):
             player.intended_position = player.pos
         # actually move the players
         for player in self.player_list:
-            self[tuple(player.pos)] = Board.wall_char
+            self[tuple(player.pos)].state = Board.wall_char # write wall where player was
             player.pos = player.intended_position
+            self[tuple(player.pos)].state = player.char
 
     def process_input(self, pressed_keys):
         for player in self.player_list:
@@ -142,6 +147,20 @@ class Board(object):
     def update(self):
         move_players()
 
+    def render(self, screen, pixel_size):
+        # draw our walls and empty spaces
+        for row in self.board:
+            for col in row:
+                if self[col, row].state == Board.wall_char:
+                    draw_color = Board.wall_color
+                elif self[col, row].state == Board.empty_char:
+                    draw_color = Board.empty_color
+                else
+                    draw_color = Color('Black')
+                pygame.draw.rect(screen, draw_color, Rect(col * pixel_size, row * pixel_size, pixel_size, pixel_size))
+        # draw our players
+        for player in self.player_list:
+            pygame.draw.rect(screen, player.color, Rect(player.pos[0] * pixel_size, player.pos[1] * pixel_size, pixel_size, pixel_size))
 
 if __name__ == "__main__":
     board = Board('test_board.brd')

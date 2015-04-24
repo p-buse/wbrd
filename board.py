@@ -12,8 +12,10 @@ class Node(object):
 class Board(object):
     wall_char = 'A'
     empty_char = 'x'
+    trail_char = 't'
     wall_color = Color('Green')
     empty_color = Color('White')
+    trail_color = Color('firebrick')
     def __init__(self, filename, player_list):
         self.board = []
         self.width = 0
@@ -27,7 +29,6 @@ class Board(object):
                 if len(row) > 0:
                     self.board.append([Node(char) for char in row.strip()])
                     self.height += 1
-        print("width: %d" % self.width + " height: %d " % self.height)
 
 
         # Quick n dirty way to make sure players aren't on top of one another
@@ -86,7 +87,7 @@ class Board(object):
         If it finds the edge, sets all nodes in the area to open_char.
         Otherwise, sets all nodes in the area to closed_char
         @param coords - the coordinates of the starting position of the BFS
-        @param filt - a boolean function that takes a Node as its single parameter to be used for traversing the graph
+        @param filt - a boolean function that takes a Node as its single parameter for filtering finding neighbors
         @return void"""
     def test_closed(self, coords, filt, open_char, closed_char):
         # If we filter the starting coordinates, do nothing
@@ -124,11 +125,9 @@ class Board(object):
             player.intended_pos[0] = max(0, min(player.intended_pos[0], self.width - 1))
             player.intended_pos[1] = max(0, min(player.intended_pos[1], self.height - 1))
             # collide against walls
-            if self[tuple(player.intended_pos)] == Board.wall_char:
+            if self[tuple(player.intended_pos)].state == Board.wall_char:
                 player.intended_pos = player.pos
 
-        for player in self.player_list:
-            print("player %s " % player.char + " pos: %s" % player.pos)
         # make players bump against each other
         collision_set = set()
         for player_index, player in enumerate(self.player_list):
@@ -136,14 +135,13 @@ class Board(object):
                 if other_player.intended_pos == player.intended_pos and player_index != other_index:
                     collision_set.add(player_index)
                     collision_set.add(other_index)
-
         # bump the ones who would collide
         for i in collision_set:
             self.player_list[i].intended_pos = self.player_list[i].pos
 
         # actually move the players
         for player in self.player_list:
-            self[tuple(player.pos)].state = Board.wall_char # write wall where player was
+            self[tuple(player.pos)].state = Board.trail_char # write trail where player was
             player.pos = player.intended_pos
             self[tuple(player.pos)].state = player.char
 
@@ -162,13 +160,14 @@ class Board(object):
                     draw_color = Board.wall_color
                 elif self[col, row].state == Board.empty_char:
                     draw_color = Board.empty_color
+                elif self[col, row].state == Board.trail_char:
+                    draw_color = Board.trail_color
                 else:
                     draw_color = Color('Black')
                 pygame.draw.rect(screen, draw_color, Rect(col * pixel_size, row * pixel_size, pixel_size, pixel_size))
         # draw our players
         for player in self.player_list:
             pygame.draw.rect(screen, player.color, Rect(player.pos[0] * pixel_size, player.pos[1] * pixel_size, pixel_size, pixel_size))
-        print(self)
 
 if __name__ == "__main__":
     board = Board('test_board.brd')

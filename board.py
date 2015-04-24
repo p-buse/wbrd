@@ -118,26 +118,27 @@ class Board(object):
         for player in self.player_list:
             player.intended_pos = [item1 + item2 for item1, item2 in zip(player.pos, player.velocity)]
             # clamp intended position to be on our board
-            player.indended_pos[0] = max(0, min(player.intended_pos[0], self.width - 1))
-            player.indended_pos[1] = max(0, min(player.intended_pos[1], self.height - 1))
+            player.intended_pos[0] = max(0, min(player.intended_pos[0], self.width - 1))
+            player.intended_pos[1] = max(0, min(player.intended_pos[1], self.height - 1))
             # collide against walls
             if self[tuple(player.intended_pos)] == Board.wall_char:
                 player.intended_pos = player.pos
 
         # make players bump against each other
         collision_list = []
-        for player in self.player_list:
+        for player_index, player in enumerate(self.player_list):
             for other_index, other_player in enumerate(self.player_list):
-                if other_player.intended_pos == player.intended_pos:
+                if other_player.intended_pos == player.intended_pos and player_index != other_index:
                     collision_list.append(other_index)
 
         # bump the ones who would collide
-        for player in collision_list:
-            player.intended_position = player.pos
+        for i in collision_list:
+            self.player_list[i].intended_position = self.player_list[i].pos
+
         # actually move the players
         for player in self.player_list:
             self[tuple(player.pos)].state = Board.wall_char # write wall where player was
-            player.pos = player.intended_position
+            player.pos = player.intended_pos
             self[tuple(player.pos)].state = player.char
 
     def process_input(self, pressed_keys):
@@ -145,22 +146,23 @@ class Board(object):
             player.process_input(pressed_keys)
 
     def update(self):
-        move_players()
+        self.move_players()
 
     def render(self, screen, pixel_size):
         # draw our walls and empty spaces
-        for row in self.board:
-            for col in row:
+        for row in range(self.height - 1):
+            for col in range(self.width - 1):
                 if self[col, row].state == Board.wall_char:
                     draw_color = Board.wall_color
                 elif self[col, row].state == Board.empty_char:
                     draw_color = Board.empty_color
-                else
+                else:
                     draw_color = Color('Black')
                 pygame.draw.rect(screen, draw_color, Rect(col * pixel_size, row * pixel_size, pixel_size, pixel_size))
         # draw our players
         for player in self.player_list:
             pygame.draw.rect(screen, player.color, Rect(player.pos[0] * pixel_size, player.pos[1] * pixel_size, pixel_size, pixel_size))
+        print(self)
 
 if __name__ == "__main__":
     board = Board('test_board.brd')

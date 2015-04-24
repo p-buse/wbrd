@@ -34,6 +34,7 @@ class Player(object):
         if pressed_keys[self.inputmap.down]:
             velocity[1] += 1
         self.velocity = velocity
+        print("player %s " % self.char + "velocity: %s " % self.velocity)
 
     """ Render the player to the screen at a given size"""
     def render(self, screen, pixel_size):

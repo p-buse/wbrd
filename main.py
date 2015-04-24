@@ -1,5 +1,6 @@
 import pygame
 from player import Player
+from board import Board
 from pygame.locals import *
 def main():
     pygame.init()
@@ -22,7 +23,7 @@ def main():
 
     done = False
     while not done:
-        clock.tick(60) # don't run faster than 60FPS
+        clock.tick(1) # don't run faster than 60FPS
         pygame.event.pump() # refresh the event queue
         pressed_keys = pygame.key.get_pressed()
         # Process input

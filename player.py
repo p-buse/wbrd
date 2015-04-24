@@ -14,6 +14,7 @@ class Player(object):
     def __init__(self, char, color):
         self.char = char
         self.pos = [0,0]
+        self.intended_pos = [0, 0]
         self.color = color
         self.velocity = [0,0]
         self.inputmap = PlayerInput()

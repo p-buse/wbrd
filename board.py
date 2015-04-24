@@ -8,21 +8,24 @@ class Node(object):
         return "Node: " + self.state + " | Explored: " + str(self.explored)
 
 class Board(object):
-    def __init__(self, width, height):
-        self.board = [[Node('x') for x in range(width)] for x in range(height)]
-        self.width = width
-        self.height = height
-
-    def __init__(self, filename):
+    wall_char = 'A'
+    empty_char = 'x'
+    def __init__(self, filename, player_list):
         self.board = []
         self.width = 0
         self.height = 0
+        self.player_list = player_list
         with open(filename, 'r') as board_file:
             for row in board_file:
                 if len(row) > self.width:
                     self.width = len(row)
                 self.board.append([Node(char) for char in row.strip()])
                 self.height += 1
+
+
+        # Quick n dirty way to make sure players aren't on top of one another
+        for i in range(len(self.player_list)):
+            player_list[i].pos[0] += i
 
     def __str__(self):
         board_str = ''
@@ -106,9 +109,42 @@ class Board(object):
         for node_x, node_y in coords_list:
             self[node_x, node_y].state = state
 
+    def move_players(self):
+        # set intended position, colliding against walls.
+        for player in self.player_list:
+            player.intended_pos = [item1 + item2 for item1, item2 in zip(player.pos, player.velocity)]
+            # clamp intended position to be on our board
+            player.indended_pos[0] = max(0, min(player.intended_pos[0], self.width - 1))
+            player.indended_pos[1] = max(0, min(player.intended_pos[1], self.height - 1))
+            # collide against walls
+            if self[tuple(player.intended_pos)] == Board.wall_char:
+                player.intended_pos = player.pos
+
+        # make players bump against each other
+        collision_list = []
+        for player in self.player_list:
+            for other_index, other_player in enumerate(self.player_list):
+                if other_player.intended_pos == player.intended_pos:
+                    collision_list.append(other_index)
+
+        # bump the ones who would collide
+        for player in collision_list:
+            player.intended_position = player.pos
+        # actually move the players
+        for player in self.player_list:
+            self[tuple(player.pos)] = Board.wall_char
+            player.pos = player.intended_position
+
+    def process_input(self, pressed_keys):
+        for player in self.player_list:
+            player.process_input(pressed_keys)
+
+    def update(self):
+        move_players()
+
 
 if __name__ == "__main__":
     board = Board('test_board.brd')
     print(board)
-    board.test_closed((3, 9), lambda x: x.state != 'A' and not x.explored, 'O', 'C')
+    board.test_closed((3, 9), lambda x: x.state != Board.wall_char and not x.explored, 'O', 'C')
     print(board)

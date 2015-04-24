@@ -15,8 +15,10 @@ def main():
     # Set up our game objects
     p1 = Player('1', Color('red'))
     p2 = Player('2', Color('blue'))
+    p1.set_input_map(K_a, K_d, K_w, K_s)
     p2.set_input_map(K_j, K_l, K_i, K_k)
-    player_list = [p1, p2]
+    # Make a new board with our two players on it
+    board = Board('test_board.brd', [p1, p2])
 
     done = False
     while not done:
@@ -24,9 +26,8 @@ def main():
         pygame.event.pump() # refresh the event queue
         pressed_keys = pygame.key.get_pressed()
         # Process input
-        for player in player_list:
-            player.process_input(pressed_keys)
         # Update
+
         for player in player_list:
             player.update([x + y for x, y in zip(player.pos, player.velocity)])
 

@@ -21,10 +21,13 @@ class Board(object):
         self.player_list = player_list
         with open(filename, 'r') as board_file:
             for row in board_file:
+                row = row.strip()
                 if len(row) > self.width:
                     self.width = len(row)
-                self.board.append([Node(char) for char in row.strip()])
-                self.height += 1
+                if len(row) > 0:
+                    self.board.append([Node(char) for char in row.strip()])
+                    self.height += 1
+        print("width: %d" % self.width + " height: %d " % self.height)
 
 
         # Quick n dirty way to make sure players aren't on top of one another
@@ -124,6 +127,8 @@ class Board(object):
             if self[tuple(player.intended_pos)] == Board.wall_char:
                 player.intended_pos = player.pos
 
+        for player in self.player_list:
+            print("player %s " % player.char + " pos: %s" % player.pos)
         # make players bump against each other
         collision_list = []
         for player_index, player in enumerate(self.player_list):
@@ -150,8 +155,8 @@ class Board(object):
 
     def render(self, screen, pixel_size):
         # draw our walls and empty spaces
-        for row in range(self.height - 1):
-            for col in range(self.width - 1):
+        for row in range(self.height):
+            for col in range(self.width):
                 if self[col, row].state == Board.wall_char:
                     draw_color = Board.wall_color
                 elif self[col, row].state == Board.empty_char:

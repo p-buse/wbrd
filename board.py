@@ -1,4 +1,5 @@
 import pygame
+from vector2 import Vector2
 from pygame.locals import *
 from collections import deque
 class Node(object):
@@ -13,9 +14,7 @@ class Board(object):
     wall_char = 'A'
     empty_char = 'x'
     trail_char = 't'
-    wall_color = Color('Green')
-    empty_color = Color('White')
-    trail_color = Color('firebrick')
+    colors = { wall_char: Color('Green'), empty_char: Color('White'), trail_char: Color('firebrick'), '1': Color('Red'), '2': Color('Blue') }
     def __init__(self, filename, player_list):
         self.board = []
         self.width = 0
@@ -33,7 +32,7 @@ class Board(object):
 
         # Quick n dirty way to make sure players aren't on top of one another
         for i in range(len(self.player_list)):
-            player_list[i].pos[0] += i
+            player_list[i].pos = Vector2(player_list[i].pos.x + i, player_list[i].pos.y)
 
     def __str__(self):
         board_str = ''
@@ -119,14 +118,15 @@ class Board(object):
 
     def move_players(self):
         # set intended position, colliding against walls.
-        for player in self.player_list:
-            player.intended_pos = [item1 + item2 for item1, item2 in zip(player.pos, player.velocity)]
+        for player_index in range(len(self.player_list)):
+            intended_x, intended_y = self.player_list[player_index].intended_pos
             # clamp intended position to be on our board
-            player.intended_pos[0] = max(0, min(player.intended_pos[0], self.width - 1))
-            player.intended_pos[1] = max(0, min(player.intended_pos[1], self.height - 1))
+            intended_x = max(0, min(intended_x, self.width - 1))
+            intended_y = max(0, min(intended_y, self.height - 1))
+            self.player_list[player_index].intended_pos = Vector2(intended_x, intended_y)
             # collide against walls
-            if self[tuple(player.intended_pos)].state == Board.wall_char:
-                player.intended_pos = player.pos
+            if self[intended_x, intended_y].state == Board.wall_char:
+                self.player_list[player_index].intended_pos = self.player_list[player_index].pos
 
         # make players bump against each other
         collision_set = set()
@@ -141,9 +141,9 @@ class Board(object):
 
         # actually move the players
         for player in self.player_list:
-            self[tuple(player.pos)].state = Board.trail_char # write trail where player was
+            self[player.pos].state = player.char # write trail where player was
             player.pos = player.intended_pos
-            self[tuple(player.pos)].state = player.char
+            self[player.pos].state = player.char
 
     def process_input(self, pressed_keys):
         for player in self.player_list:
@@ -154,20 +154,16 @@ class Board(object):
 
     def render(self, screen, pixel_size):
         # draw our walls and empty spaces
-        for row in range(self.height):
-            for col in range(self.width):
-                if self[col, row].state == Board.wall_char:
-                    draw_color = Board.wall_color
-                elif self[col, row].state == Board.empty_char:
-                    draw_color = Board.empty_color
-                elif self[col, row].state == Board.trail_char:
-                    draw_color = Board.trail_color
+        for y in range(self.height):
+            for x in range(self.width):
+                if self[x, y].state in Board.colors:
+                    draw_color = Board.colors[self[x, y].state]
                 else:
                     draw_color = Color('Black')
-                pygame.draw.rect(screen, draw_color, Rect(col * pixel_size, row * pixel_size, pixel_size, pixel_size))
+                screen.fill(draw_color, Rect(x * pixel_size, y * pixel_size, pixel_size, pixel_size))
         # draw our players
         for player in self.player_list:
-            pygame.draw.rect(screen, player.color, Rect(player.pos[0] * pixel_size, player.pos[1] * pixel_size, pixel_size, pixel_size))
+            screen.fill(player.color, Rect(player.pos[0] * pixel_size, player.pos[1] * pixel_size, pixel_size, pixel_size))
 
 if __name__ == "__main__":
     board = Board('test_board.brd')

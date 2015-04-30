@@ -3,12 +3,13 @@ from vector2 import Vector2
 from pygame.locals import *
 from collections import deque
 class Node(object):
-    def __init__(self, state):
-        self.state = state
+    def __init__(self, char):
+        self.char = char
         self.explored = False
+        self.captured = False
 
     def __repr__(self):
-        return "Node: " + self.state + " | Explored: " + str(self.explored)
+        return "Node: " + self.char + " | Explored: " + str(self.explored)
 
 class Board(object):
     wall_char = 'A'
@@ -39,7 +40,7 @@ class Board(object):
         board_str = ''
         for row in self.board:
             for node in row:
-               board_str += node.state
+               board_str += node.char
             board_str += "\n"
         return board_str
 
@@ -78,30 +79,31 @@ class Board(object):
                 self[x, y].explored = False
 
     """ Does a BFS at a point in the board.
-        Returns a tuple (is_open, seen_list) of whether the point is open, and coordinates of points that are accessible from the starting coordinate
         @param coords - the coordinates of the starting position of the BFS
         @param filt - a boolean function that takes a Node as its single parameter for filtering finding neighbors
-        @return void"""
+        @return a tuple (is_open, seen_list) of whether the point is open, and coordinates of points that are accessible from the starting coordinate"""
     def _check_open(self, coords, filt):
         self._set_all_unexplored()
-        seen_list = []
+        seen_set = set()
         work_queue = deque()
         is_open = False
         work_queue.append(coords)
         while work_queue:
             curnode_coords = work_queue.popleft()  # pop current node off our queue
             self[curnode_coords].explored = True  # set node as explored
-            seen_list.append(curnode_coords)   # add it to our seen list
+            seen_set.add(curnode_coords)   # add it to our seen list
             if self._is_edge(curnode_coords):   #if it's an edge, we know the entire area is open
                 is_open = True
             for neighbor_coords in self._get_neighbors(curnode_coords, filt):  # add our (filtered) neighbors to the queue
-                work_queue.append(neighbor_coords)
-        return is_open, seen_list
+                if neighbor_coords not in work_queue:
+                    work_queue.append(neighbor_coords)
+        return is_open, seen_set
 
     """ Sets a list of coords of nodes in the board to be a particular state"""
-    def set_to(self, coords_list, state):
+    def set_to(self, coords_list, char, captured=True):
         for node_x, node_y in coords_list:
-            self[node_x, node_y].state = state
+            self[node_x, node_y].char = char
+            self[node_x, node_y].captured = True
 
     def move_players(self):
         # set intended position, colliding against walls.
@@ -112,7 +114,7 @@ class Board(object):
             intended_y = max(0, min(intended_y, self.height - 1))
             self.player_list[player_index].intended_pos = Vector2(intended_x, intended_y)
             # collide against walls
-            if self[intended_x, intended_y].state == Board.wall_char:
+            if self[intended_x, intended_y].char == Board.wall_char:
                 self.player_list[player_index].intended_pos = self.player_list[player_index].pos
 
         # make players bump against each other
@@ -128,12 +130,13 @@ class Board(object):
 
         # actually move the players
         for player in self.player_list:
-            self[player.pos].state = Board.trail_char  # write trail where player was
+            if not self[player.pos].captured:
+                self[player.pos].char = Board.trail_char  # write trail where player was
             player.pos = player.intended_pos
-            self[player.pos].state = player.char
+            self[player.pos].char = player.char
 
     def _search_filt(self, node):
-        return node.state != Board.wall_char and node.state != Board.trail_char and node.state not in (player.char for player in self.player_list) and not node.explored
+        return node.char == Board.empty_char and not node.explored
 
     def process_input(self, pressed_keys):
         for player in self.player_list:
@@ -144,25 +147,27 @@ class Board(object):
         for player in self.player_list:
             is_open, seen_coords = self._check_open(player.pos, self._search_filt)
             if not is_open:
-                self.set_to(seen_coords, Board.captured_char)
+                self.set_to(seen_coords, player.char)
 
     def render(self, screen, pixel_size):
         # draw our walls and empty spaces
         for y in range(self.height):
             for x in range(self.width):
-                char = self[x, y].state
+                char = self[x, y].char
                 draw_color = Color('Black') # default color
                 if char in Board.colors:
                     draw_color = Board.colors[char]
                 else:
                     for player in self.player_list:
                         if char == player.char:
-                            draw_color = player.color
+                            draw_color = player.color.correct_gamma(0.5)
                             break
                 screen.fill(draw_color, Rect(x * pixel_size, y * pixel_size, pixel_size, pixel_size))
+        for player in self.player_list:
+            screen.fill(player.color, Rect(player.pos.x * pixel_size, player.pos.y * pixel_size, pixel_size, pixel_size))
 
 if __name__ == "__main__":
     board = Board('test_board.brd')
     print(board)
-    board.test_closed((3, 9), lambda x: x.state != Board.wall_char and not x.explored, 'O', 'C')
+    board.test_closed((3, 9), lambda x: x.char != Board.wall_char and not x.explored, 'O', 'C')
     print(board)

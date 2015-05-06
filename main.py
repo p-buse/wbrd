@@ -1,5 +1,5 @@
 import pygame
-from player import Player
+from player import Player, PlayerInput
 from board import Board
 from pygame.locals import *
 def main():
@@ -13,10 +13,8 @@ def main():
     clock = pygame.time.Clock()
 
     # Set up our game objects
-    p1 = Player('1', Color('red'))
-    p2 = Player('2', Color('blue'))
-    p1.set_input_map(K_a, K_d, K_w, K_s)
-    p2.set_input_map(K_j, K_l, K_i, K_k)
+    p1 = Player('1', Color('red'), PlayerInput(K_a, K_d, K_w, K_s, K_f), 3)
+    p2 = Player('2', Color('blue'), PlayerInput(K_j, K_l, K_i, K_k, K_h), 3)
     # Make a new board with our two players on it
     board = Board('test_board.brd', [p1, p2])
     pixel_x = w / board.width
@@ -29,8 +27,9 @@ def main():
         clock.tick(60) # don't run faster than 60FPS
         pygame.event.pump() # refresh the event queue
         pressed_keys = pygame.key.get_pressed()
+        events = pygame.event.get()
         # Process input
-        board.process_input(pressed_keys)
+        board.process_input(pressed_keys, events)
         # Update
         board.update()
         # Render

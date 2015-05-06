@@ -16,7 +16,8 @@ class Board(object):
     empty_char = 'x'
     trail_char = 't'
     captured_char = 'C'
-    colors = { wall_char: Color('black'), empty_char: Color('White'), trail_char: Color('green'), captured_char: Color('pink')}
+    percolate_char = 'p'
+    colors = { wall_char: Color('black'), empty_char: Color('White'), trail_char: Color('green'), captured_char: Color('pink'), percolate_char: Color('yellow')}
     def __init__(self, filename, player_list):
         self.board = []
         self.width = 0
@@ -85,7 +86,7 @@ class Board(object):
     """ Does a BFS at a point in the board.
         @param coords - the coordinates of the starting position of the BFS
         @param filt - a boolean function that takes a Node as its single parameter for filtering finding neighbors
-        @return a tuple (is_open, seen_list) of whether the point is open, and coordinates of points that are accessible from the starting coordinate"""
+        @return coordinates of points that are accessible from the starting coordinate"""
     def _check_open(self, coords, filt):
         self._set_all_unexplored()
         seen_set = set()
@@ -97,13 +98,14 @@ class Board(object):
             self[curnode_coords].explored = True  # set node as explored
             seen_set.add(curnode_coords)   # add it to our seen list
             if self._is_edge(curnode_coords):   #if it's an edge, we know the entire area is open
-                return True, set()
+                return set()
             for neighbor_coords in self._get_neighbors(curnode_coords, filt):  # add our (filtered) neighbors to the queue
                 if neighbor_coords not in work_queue:
                     work_queue.append(neighbor_coords)
-        return is_open, seen_set
+        return seen_set
 
-    """ Sets a list of coords of nodes in the board to be a particular state"""
+    """ Sets a list of coords of nodes in the board to be a particular state
+        Also sets whether they were captured in this way (default: true)"""
     def _set_to(self, coords_list, char, captured=True):
         for node_x, node_y in coords_list:
             self[node_x, node_y].char = char
@@ -141,19 +143,22 @@ class Board(object):
     def _search_filt(self, node):
         return node.char == Board.empty_char and not node.explored and not node.captured
 
-    def process_input(self, pressed_keys):
+    def process_input(self, pressed_keys, events):
         for player in self.player_list:
-            player.process_input(pressed_keys)
+            player.process_input(pressed_keys, events)
 
     def update(self):
         self._move_players()
         for player in self.player_list:
-            self._set_all_unexplored()
-            for neighbor_pos in self._get_neighbors(player.pos, self._search_filt, True):
-                is_open, seen_coords = self._check_open(neighbor_pos, self._search_filt)
-                if not is_open:
-                    self._set_to(seen_coords, player.char)
+            if player.update()['attacking']:
+                print("player " + player.char + " is attacking!")
+                for attack_coords in self._get_neighbors(player.pos, self._search_filt, eightway=True):
+                    seen_coords = self._check_open(attack_coords, self._search_filt)
+                    if seen_coords:
+                        self._set_to(seen_coords, player.char)
 
+
+        
     def render(self, screen, pixel_size):
         # draw our walls and empty spaces
         for y in range(self.height):
